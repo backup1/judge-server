@@ -2,6 +2,8 @@ import os
 import tempfile
 
 from dmoj.error import InternalError
+from dmoj.result import CheckerResult, Result
+from dmoj.utils.os_ext import strsignal
 
 
 def mktemp(data):
@@ -55,3 +57,29 @@ def compile_with_auxiliary_files(filenames, lang=None, compiler_time_limit=None)
         executor = executor('_aux_file', list(sources.values())[0])
 
     return executor
+
+
+def check_aux_file_error(proc, executor, name, stderr, time_limit, memory_limit):
+    if proc.tle:
+        error = '%s timed out (> %d seconds)' % (name, time_limit)
+    elif proc.mle:
+        error = '%s ran out of memory (> %s Kb)' % (name, memory_limit)
+    elif proc.protection_fault:
+        syscall, callname, args = proc.protection_fault
+        error = '%s invoked disallowed syscall %s (%s)' % (name, syscall, callname)
+    elif proc.returncode:
+        if proc.returncode > 0:
+            error = '%s exited with nonzero code %d' % (name, proc.returncode)
+        else:
+            error = '%s exited with %s' % (name, strsignal(proc.signal))
+        # To get the feedback, we need a Result object, but we lack a Case object
+        # So we set it to None because we don't need to access it
+        result = Result(None)
+        result.set_result_flag(proc)
+        result.update_feedback(stderr, proc, executor)
+        if result.feedback:
+            error += ' with feedback %s' % result.feedback
+    else:
+        return
+
+    raise InternalError(error)

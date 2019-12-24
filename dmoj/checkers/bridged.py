@@ -1,10 +1,9 @@
 import os
 import subprocess
 
-from dmoj.error import InternalError
 from dmoj.judgeenv import env, get_problem_root
 from dmoj.result import CheckerResult
-from dmoj.utils.aux_files import compile_with_auxiliary_files, mktemp
+from dmoj.utils.aux_files import check_aux_file_result, compile_with_auxiliary_files, mktemp
 from dmoj.utils.unicode import utf8text
 
 executor = None
@@ -34,25 +33,5 @@ def check(process_output, judge_output, judge_input, problem_id,
 
         proc_output, error = map(utf8text, process.communicate())
 
-        # We use the testlib.h return codes
-        AC = 0
-        WA = 1
-        PE = 2
-        IE = 3
-
-        if process.returncode == AC:
-            if feedback:
-                return CheckerResult(True, point_value, feedback=proc_output)
-            else:
-                return CheckerResult(True, point_value)
-        elif process.returncode in (WA, PE):
-            if feedback:
-                return CheckerResult(False, 0, feedback=proc_output)
-            else:
-                return CheckerResult(False, 0, feedback='Presentation Error' if process.returncode == PE else '')
-        else:
-            if process.returncode == IE:
-                error = 'checker failed assertion with message %s' % proc_output
-            else:
-                error = 'checker returned unexpected return code %d with stderr %s' % (process.returncode, error)
-            raise InternalError(error)
+        return check_aux_file_result(process, executor, point_value, time_limit, memory_limit,
+                                     feedback=utf8text(proc_output) if feedback else None, name='checker', stderr=error)
