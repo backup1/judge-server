@@ -8,7 +8,7 @@ from dmoj.utils.os_ext import strsignal
 
 def mktemp(data):
     tmp = tempfile.NamedTemporaryFile()
-    tmp.write(data)
+    tmp.write(data or b'')
     tmp.flush()
     return tmp
 
