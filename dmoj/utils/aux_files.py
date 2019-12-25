@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-from dmoj.error import InternalError
+from dmoj.error import CompileError, InternalError
 from dmoj.result import CheckerResult, Result
 from dmoj.utils.os_ext import strsignal
 
@@ -47,14 +47,17 @@ def compile_with_auxiliary_files(filenames, lang=None, compiler_time_limit=None)
     if issubclass(executor, CompiledExecutor):
         executor = type('Executor', (executor,), {'compiler_time_limit': compiler_time_limit})
 
-    # Optimize the common case.
-    if use_cpp or use_c:
-        # Some auxilary files (like those using testlib.h) take an extremely long time to compile, so we cache them.
-        executor = executor('_aux_file', None, aux_sources=sources, cached=True)
-    else:
-        if len(sources) > 1:
-            raise InternalError('non-C/C++ auxilary programs cannot be multi-file')
-        executor = executor('_aux_file', list(sources.values())[0])
+    try:
+        # Optimize the common case.
+        if use_cpp or use_c:
+            # Some auxiliary files take an extremely long time to compile, so we cache them.
+            executor = executor('_aux_file', None, aux_sources=sources, cached=True)
+        else:
+            if len(sources) > 1:
+                raise InternalError('non-C/C++ auxiliary programs cannot be multi-file')
+            executor = executor('_aux_file', list(sources.values())[0])
+    except CompileError as err:
+        raise InternalError('Failed to compile auxiliary program with error %s' % err)
 
     return executor
 
