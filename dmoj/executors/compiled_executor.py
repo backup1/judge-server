@@ -138,9 +138,14 @@ class CompiledExecutor(BaseExecutor, metaclass=_CompiledExecutorMeta):
     def create_executable_limits(self) -> Optional[Callable[[], None]]:
         try:
             import resource
+            from dmoj.utils.os_ext import oom_score_adj, OOM_SCORE_ADJ_MAX
 
             def limit_executable():
                 os.setpgrp()
+
+                # Mark compiler process as first to die in an OOM situation, just to ensure that the judge will not
+                # be killed.
+                oom_score_adj(OOM_SCORE_ADJ_MAX)
                 resource.setrlimit(resource.RLIMIT_FSIZE, (self.executable_size, self.executable_size))
 
             return limit_executable
