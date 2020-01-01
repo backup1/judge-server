@@ -7,6 +7,7 @@ from importlib import import_module
 import yaml
 
 from dmoj import judgeenv
+from dmoj.contrib import load_contrib_modules
 from dmoj.executors import executors
 from dmoj.testsuite import Tester
 from dmoj.utils.ansi import print_ansi
@@ -108,6 +109,7 @@ def ci_test(executors_to_test, overrides, allow_fail=frozenset()):
     else:
         print_ansi('#ansi[Executor configuration succeeded.](green|bold)')
     print()
+    load_contrib_modules()
     print()
     print('Running test cases...')
     judgeenv.problem_dirs = [os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'testsuite'))]
