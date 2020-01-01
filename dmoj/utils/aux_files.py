@@ -2,7 +2,7 @@ import os
 import tempfile
 
 from dmoj.error import CompileError, InternalError
-from dmoj.result import CheckerResult, Result
+from dmoj.result import Result
 from dmoj.utils.os_ext import strsignal
 
 

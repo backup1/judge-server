@@ -1,9 +1,11 @@
 import os
 import subprocess
 
+from dmoj.contrib import contrib_modules
+from dmoj.error import InternalError
 from dmoj.graders.standard import StandardGrader
 from dmoj.judgeenv import env, get_problem_root
-from dmoj.utils.aux_files import check_aux_file_result, compile_with_auxiliary_files, mktemp
+from dmoj.utils.aux_files import compile_with_auxiliary_files, mktemp
 from dmoj.utils.unicode import utf8text
 
 
@@ -21,10 +23,16 @@ class BridgedInteractiveGrader(StandardGrader):
             return False
 
         stderr = self._interactor.stderr.read()
-        return check_aux_file_result(self._interactor, self.interactor_binary, case.points, self._interactor_time_limit,
-                                     self._interactor_memory_limit,
-                                     feedback=utf8text(stderr) if self.handler_data.feedback else None,
-                                     name='interactor', stderr=stderr)
+        returncode = self.handler_data.get('returncode', 'default')
+        if returncode not in contrib_modules or not hasattr(contrib_modules[returncode].ContribModule,
+                                                            'parse_return_code'):
+            raise InternalError('%s is not a valid return code parser' % returncode)
+        returncode_parser = contrib_modules[returncode].ContribModule.parse_return_code
+
+        return returncode_parser(self._interactor, self.interactor_binary, case.points, self._interactor_time_limit,
+                                 self._interactor_memory_limit,
+                                 feedback=utf8text(stderr) if self.handler_data.feedback else None,
+                                 name='interactor', stderr=stderr)
 
     def _launch_process(self, case):
         submission_stdin, self._stdout_pipe = os.pipe()
